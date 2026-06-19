@@ -1,50 +1,51 @@
 import numpy as np
+
+
+class JacobiResult:
+    def __init__(self, solution, iterations, error):
+        self.solution = solution
+        self.iterations = iterations
+        self.error = error
+
+    def __iter__(self):
+        yield self.solution
+        yield self.iterations
+        yield self.error
+
+    def __str__(self):
+        return (
+            f"最终结果：{self.solution}\n"
+            f"迭代次数：{self.iterations}\n"
+            f"最终误差：{self.error}"
+        )
+
+    def __repr__(self):
+        return str(self)
+
+
 def is_diagonally_dominant(A):
-    A=np.array(A,dtype=float)
+    A = np.array(A, dtype=float)
 
     for i in range(A.shape[0]):
-        diagonal=abs(A[i][i])
-        others=np.sum(np.abs(A[i]))-diagonal
-        if diagonal<others:
+        diagonal = abs(A[i][i])
+        others = np.sum(np.abs(A[i])) - diagonal
+        if diagonal < others:
             return False
-    return True    
+    return True
 
 
-def jacobi(A, b, x0=None, tol=1e-6, max_iter=100, verbose=False):
+def jacobi(A, b, x0=None, tol=1e-6, max_iter=100, verbose=False, check=True):
     """
     使用 Jacobi 迭代法求解线性方程组 A x = b。
 
-    参数
-    ----
-    A : 二维数组，形状为 (n, n)
-        系数矩阵。
-    b : 一维数组，形状为 (n,)
-        常数项向量。
-    x0 : 一维数组，形状为 (n,)，可选
-        初始迭代值。如果不传入，则默认使用全 0 向量。
-    tol : 浮点数
-        误差小于 tol 时停止迭代。
-    max_iter : 整数
-        最大迭代次数。
-    verbose : 布尔值
-        为 True 时打印每次迭代结果。
-
-    返回值
-    ------
-    x : 数组
-        方程组的近似解。
-    iterations : 整数
-        实际迭代次数。
-    error : 浮点数
-        最终误差。
+    A 是系数矩阵，b 是常数项向量。
+    默认从全 0 向量开始迭代，也可以通过 x0 指定初始值。
     """
     A = np.array(A, dtype=float)
     b = np.array(b, dtype=float)
 
     if A.ndim != 2 or A.shape[0] != A.shape[1]:
         raise ValueError("A 必须是方阵。")
-    if not is_diagonally_dominant(A):
-        print("警告：当前矩阵不满足主对角占优，Jocobi迭代法可能不收敛。")
 
     n = A.shape[0]
     if b.shape != (n,):
@@ -52,7 +53,10 @@ def jacobi(A, b, x0=None, tol=1e-6, max_iter=100, verbose=False):
 
     diagonal = np.diag(A)
     if np.any(diagonal == 0):
-        raise ValueError("Jacobi 迭代法不能处理主对角线上有 0 的矩阵。")
+        raise ValueError("A 的主对角线上不能有 0。")
+
+    if check and not is_diagonally_dominant(A):
+        print("警告：当前矩阵不满足主对角占优，Jacobi 迭代法可能不收敛。")
 
     if x0 is None:
         x = np.zeros(n)
@@ -72,19 +76,17 @@ def jacobi(A, b, x0=None, tol=1e-6, max_iter=100, verbose=False):
 
         x = x_new
         if error < tol:
-            return x, iteration, error
+            return JacobiResult(x, iteration, error)
 
-    return x, max_iter, error
+    return JacobiResult(x, max_iter, error)
 
 
 if __name__ == "__main__":
     A = [
-       [4,1],
-       [1,5]
+        [2, 1],
+        [1, 4],
     ]
-    b = [6,9]
 
-    result, iterations, error = jacobi(A, b, tol=1e-3, verbose=True)
-    print(f"近似解: {result}")
-    print(f"迭代次数: {iterations}")
-    print(f"最终误差: {error}")
+    b = [5, 6]
+
+    print(jacobi(A, b, verbose=True))
